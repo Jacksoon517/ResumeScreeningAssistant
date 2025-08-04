@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简历筛选助手</title>
+  <style>
+    /* Reuse the same styles as popup for consistency */
+    :root {
+      /* Dark theme colors: black background with golden accents */
+      --bg-color: #0d1117;
+      --fg-color: #c9d1d9;
+      --input-bg: #161b22;
+      --border-color: #30363d;
+      --button-bg: #f5c242; /* golden */
+      --button-bg-hover: #e5b534;
+      --button-text-color: #0d1117;
+      --panel-bg: #21262d;
+      --focus-color: #f5c242;
+    }
+    body.light {
+      /* Light theme colors: white with deep blue accents */
+      --bg-color: #ffffff;
+      --fg-color: #202124;
+      --input-bg: #ffffff;
+      --border-color: #dadce0;
+      --button-bg: #1f6feb; /* deep blue */
+      --button-bg-hover: #2f81f7;
+      --button-text-color: #ffffff;
+      --panel-bg: #f8f9fa;
+      --focus-color: #1f6feb;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      width: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+      background-color: var(--bg-color);
+      color: var(--fg-color);
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .settings-toggle {
+      cursor: pointer;
+      font-size: 18px;
+      user-select: none;
+    }
+    /* Theme switch (iOS style) */
+    .theme-switch {
+      position: relative;
+      width: 46px;
+      height: 22px;
+      border-radius: 11px;
+      background-color: var(--border-color);
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .theme-switch .knob {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      /* Highlight knob with current theme color */
+      background-color: var(--button-bg);
+      left: 2px;
+      top: 1px;
+      transition: left 0.25s ease;
+    }
+    body.light .theme-switch .knob {
+      left: 24px;
+    }
+    .theme-switch .icon {
+      font-size: 12px;
+      position: absolute;
+      top: 3px;
+    }
+    .theme-switch .light-icon {
+      left: 4px;
+    }
+    .theme-switch .dark-icon {
+      right: 4px;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 80px;
+      resize: vertical;
+      margin-bottom: 8px;
+      padding: 6px;
+      font-size: 14px;
+      background-color: var(--input-bg);
+      color: var(--fg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    textarea:focus {
+      outline: none;
+      border: 2px solid var(--focus-color);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    button {
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: var(--button-bg);
+      color: var(--button-text-color);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: var(--button-bg-hover);
+    }
+    .result {
+      background-color: var(--input-bg);
+      padding: 6px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      min-height: 60px;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+    #settingsPanel {
+      display: none;
+      margin-top: 12px;
+      padding: 8px;
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    #settingsPanel label {
+      margin-top: 8px;
+    }
+    #settingsPanel input {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      padding: 4px;
+      font-size: 13px;
+      background-color: var(--input-bg);
+      color: var(--fg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    #settingsButtons {
+      text-align: right;
+    }
+    #settingsButtons button {
+      margin-left: 8px;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .button-container button {
+      flex: 1;
+      min-width: 120px;
+    }
+    /* Upload area */
+    .upload-area {
+      margin-top: 12px;
+      padding: 12px;
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--fg-color);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .upload-area.dragover {
+      background-color: var(--panel-bg);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">简历筛选助手</div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div id="themeSwitch" class="theme-switch" title="切换明暗模式">
+        <div class="knob"></div>
+        <span class="icon light-icon">☀️</span>
+        <span class="icon dark-icon">🌙</span>
+      </div>
+      <div id="settingsToggle" class="settings-toggle" title="设置">⚙️</div>
+    </div>
+  </div>
+
+  <label for="resumeInput">候选人简历：</label>
+  <textarea id="resumeInput" placeholder="请粘贴候选人简历文本"></textarea>
+
+  <label for="jobInput">岗位需求（可选）：</label>
+  <textarea id="jobInput" placeholder="请粘贴岗位描述（可选）"></textarea>
+
+  <div class="button-container">
+    <button id="jsScoreBtn">JS 评分</button>
+    <button id="summaryBtn">大模型摘要</button>
+    <button id="scoreBtn">大模型评分</button>
+    <button id="extractBtn">读取页面简历</button>
+    <button id="questionBtn">生成沟通问题</button>
+  </div>
+
+  <label>评分结果：</label>
+  <div id="scoreResult" class="result"></div>
+
+  <label>简历摘要：</label>
+  <div id="summaryResult" class="result"></div>
+
+  <label>沟通关键问题：</label>
+  <div id="questionResult" class="result"></div>
+
+  <div id="uploadArea" class="upload-area">
+    <input id="fileInput" type="file" accept=".txt,.md,.json,.csv,.log,.pdf,.doc,.docx" style="display:none" />
+    <div id="uploadText">拖放文件或点击上传简历</div>
+  </div>
+
+  <div id="settingsPanel">
+    <label for="apiKey">API Key：</label>
+    <input id="apiKey" placeholder="请输入 API Key" />
+    <label for="apiUrl">接口地址：</label>
+    <input id="apiUrl" placeholder="请输入接口地址" />
+    <label for="modelId">模型 ID：</label>
+    <input id="modelId" placeholder="如 general、kimi 等" />
+    <div id="settingsButtons">
+      <button id="cancelSettingsBtn">取消</button>
+      <button id="saveConfigBtn">保存</button>
+    </div>
+  </div>
+
+  <!-- External library for reading ZIP (DOCX) files. JSZip is loaded locally to respect Chrome extension CSP. -->
+  <script src="libs/jszip.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
